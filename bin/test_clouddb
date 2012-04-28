@@ -1,0 +1,22 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2011 by Alex Brandt <alunduil@alunduil.com>
+
+"""Main application for running unit tests for babelcloud.
+
+"""
+         
+import sys
+import os
+import unittest
+
+import test_clouddb
+
+def main():
+    """Set us up the test ..."""
+    suite = unittest.TestSuite(test_clouddb.suite())
+    unittest.TextTestRunner(verbosity = 2, failfast = True).run(suite)
+
+if __name__ == "__main__":
+    main()
