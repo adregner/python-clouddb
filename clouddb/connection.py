@@ -43,7 +43,7 @@ class Connection(object):
         self.client = None
         
         self.client = APIRequester(self.user, self.key, 
-            auth_url, "cloudDatabases", region, debug=self.debug)
+            auth_url, "cloudDatabases", self.region, debug=self.debug)
 
     def __str__(self):
         """

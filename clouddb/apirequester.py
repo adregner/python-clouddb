@@ -76,10 +76,14 @@ class APIRequester(object):
         if not self.region:
             service_url = service_points[0]['publicURL']
         else:
+            service_url = None
             for endpoint in service_points:
                 if endpoint['region'] == self.region:
                     service_url = endpoint['publicURL']
                     break
+            if service_url is None:
+                # TODO : proper error
+                raise Exception("%s region is not avaliable." % self.region)
         
         (scheme, self.host, path, params, query, frag) = urlparse(service_url)
         
