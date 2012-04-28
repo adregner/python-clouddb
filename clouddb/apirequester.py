@@ -7,53 +7,93 @@ Generic module to make HTTP(S) requests to a server.
 This code is licensed under the BSD license.  See COPYING for more details.
 """
 
+from urlparse import urlparse
 from httplib import HTTPSConnection
 from urllib import urlencode
+import socket
 
 try:
     from json import loads as json_loads
+    from json import dumps as json_dumps
 except ImportError:
     from simplejson import loads as json_loads
+    from simplejson import dumps as json_dumps
 
 import errors
 
-class Requester(object):
+class APIRequester(object):
     """
     This class is used internally by the clouddb project to make requests to an
     HTTPS server in a convient way.
     """
     
-    def __init__(self, host, **kwargs):
+    def __init__(self, username, api_key, auth_url, service, region, **kwargs):
         """
         """
-        self.host = host
         self.debug = int(kwargs.get('debug', 0))
         
-        self.base_path = "/"
+        self.base_path = ""
         self.base_headers = {}
         
-        self._client_setup()
+        (scheme, auth_host, auth_path, params, query, frag) = urlparse(auth_url)
+        
+        if scheme != 'https':
+            raise Exception("We only support https")
+        
+        self.user = username
+        self.key = api_key
+        self.auth_host = auth_host
+        self.auth_path = auth_path
+        self.service = service
+        self.region = region.upper()
+        
+        self._setup(self.auth_host)
         self._authenticate()
 
-    def _setup(self):
+    def _setup(self, host=None):
         """
         """
-        self.client = HTTPSConnection(self.host)
+        self.client = HTTPSConnection(host if host else self.host)
         self.client.set_debuglevel(self.debug)
 
     def _authenticate(self):
         """
         """
-        pass
-
-    def set_base_header(self, header, value):
-        """
-        """
         
+        auth_data = self.post(self.auth_path, {
+            'credentials': {
+                'username': self.user, 'key': self.key
+        }})
+        
+        self.set_base_header({
+            'X-Auth-Token': auth_data['auth']['token']['id']
+        })
+        
+        # TODO : save the expires timestamp of the token and reauth when needed
+        
+        service_points = auth_data['auth']['serviceCatalog'][self.service]
+        
+        if not self.region:
+            service_url = service_points[0]['publicURL']
+        else:
+            for endpoint in service_points:
+                if endpoint['region'] == self.region:
+                    service_url = endpoint['publicURL']
+                    break
+        
+        (scheme, self.host, path, params, query, frag) = urlparse(service_url)
+        
+        # establish settings and connection for the service endpoint
+        self._setup(self.host)
+        self.set_base_path(path)
+
+    def set_base_header(self, header, value=None):
+        """
+        """
         # set multiple headers
         if type(header) in (dict,) and len(header) > 0:
             for k, v in header.items():
-                self.set_header(k, v)
+                self.set_base_header(k, v)
 
         # set this one header, from a list or strings
         else:
@@ -65,12 +105,12 @@ class Requester(object):
     def get_base_headers(self):
         """
         """
-        return self.headers
+        return self.base_headers
 
     def delete_base_header(self, header):
         """
         """
-        if header in self.headers:
+        if header in self.base_headers:
             del self.base_headers[header.title()]
 
     def _build_path(self, path):
@@ -96,37 +136,44 @@ class Requester(object):
         method = method.upper()
         
         # build the full path to request
-        path = '/' + self.get_base_path() + '/' + self._build_path(path)
+        request_path = ''
+        if self.get_base_path() is not None:
+            request_path = '/' + self.get_base_path()
+        request_path += '/' + self._build_path(path)
         
         # check that we aren't trying to use data when we can't
         if data and method not in ('POST', 'PUT'):
             raise BadRequest("%s requests cannot contain data" % method)
 
+        # get base headers
+        request_headers = self.base_headers.copy()
+        
+        # don't a type when there is no content
+        if not data and 'Content-type' in request_headers:
+            del request_headers['Content-type']
+        
         # merge base headers and supplied headers
-        headers = self.base_headers.update(headers)
+        if headers:
+            request_headers.update(headers)
 
         # encode data if needed
         if data and type(data) != str:
             data = json_dumps(data)
-            headers['Content-type'] = "application/json"
-        
-        # don't a type when there is no content
-        if not data:
-            del headers['Content-type']
+            request_headers['Content-type'] = "application/json"
         
         # append url arguments if given
         if args:
-            path = path + '?' + urlencode(args)
+            request_path += '?' + urlencode(args)
         
         # this is how we make a request
         def make_request():
-            self.client.request(method, path, data, headers)
+            self.client.request(method, request_path, data, request_headers)
             return self.client.getresponse()
         
         try:
             # first try...
             response = make_request()
-        except (socket.error, IOError, HTTPException):
+        except (socket.error, IOError):
             # maybe we just lost the socket, try again
             self._setup()
             response = make_request()
@@ -138,14 +185,11 @@ class Requester(object):
         
         return response
     
-    def get(self, path, data=None, headers=None, args=None):
+    def handle_response(self, r):
         """
         """
-        r = self.request('GET', path, data, headers, args)
-        
         if r.status < 200 or r.status > 299:
             # TODO : this is probably throwing away some error information
-            r.read()
             raise errors.ResponseError(r.status, r.reason)
         
         read_output = r.read()
@@ -154,6 +198,20 @@ class Requester(object):
             return json_loads(read_output)
         else:
             return read_output
+    
+    def get(self, path, headers=None, args=None):
+        """
+        """
+        r = self.request('GET', path, None, headers, args)
+        
+        return self.handle_response(r)
+    
+    def post(self, path, data=None, headers=None, args=None):
+        """
+        """
+        r = self.request('POST', path, data, headers, args)
+        
+        return self.handle_response(r)
 
 
 class BadRequest(Exception):

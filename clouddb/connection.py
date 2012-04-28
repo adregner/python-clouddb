@@ -9,9 +9,8 @@ This is your starting point for accessing the Cloud Database service.
 This code is licensed under the BSD license.  See COPYING for more details.
 """
 
-from urlparse import urlparse
-
-from requester import Requester
+from apirequester import APIRequester
+from models import *
 import consts
 
 class Connection(object):
@@ -32,13 +31,10 @@ class Connection(object):
         """
         self.user = username
         self.key = api_key
-        self.token = None
         self.region = region.upper()
         
         if not auth_url:
             auth_url = consts.default_authurl
-        
-        (scheme, auth_netloc, auth_path, params, query, frag) = urlparse(auth_url)
         
         self.debug = int(kwargs.get('debug', 0))
         
@@ -46,18 +42,30 @@ class Connection(object):
         # host the service api endpoint is on
         self.client = None
         
-        self._authenticate(auth_netloc, auth_path)
+        self.client = APIRequester(self.user, self.key, 
+            auth_url, "cloudDatabases", region, debug=self.debug)
 
-    def _authenticate(self, auth_host, auth_path):
+    def __str__(self):
         """
         """
-        client = Requester(auth_host)
-        auth_response = client.request('POST', auth_path, data={
-            'username': self.user,
-            'key': self.key
-        })
+        fq_name = "%s.%s" % (self.__module__, self.__class__.__name__)
+        return "<%s object, username=%s, region=%s>" % (fq_name, self.user, self.region)
 
-    def _request(self, method, path, data='', headers=None, params=None):
+    def instances(self):
         """
         """
         pass
+    
+    def flavors(self):
+        """
+        """
+        apiout = self.client.get('/flavors')
+        flavors = list()
+        
+        for f in apiout['flavors']:
+            flavors.append(Flavor(**f))
+        
+        return flavors
+    
+    
+
