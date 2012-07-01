@@ -4,7 +4,7 @@ __author__ = "Andrew Regner <andrew@aregner.com>"
 """
 clouddb instance module
 
-This code is licensed under the BSD license.  See COPYING for more details.
+This code is licensed under the MIT license.  See COPYING for more details.
 """
 
 import re
@@ -97,6 +97,12 @@ class Instance(APIBaseModel):
         """Enable root access and return the root user's password
         """
         return self.client.post(self.our_path+'/root')['user']['password']
+
+    def got_root(self):
+        """Returns True if root access has been enabled on this database instance,
+        and false otherwise.
+        """
+        return self.client.get(self.our_path+'/root')['rootEnabled']
 
     def restart(self):
         """Reboots the underlying virtual server powering this instance.
