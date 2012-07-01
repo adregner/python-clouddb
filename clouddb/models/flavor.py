@@ -7,8 +7,6 @@ clouddb flavor module
 This code is licensed under the BSD license.  See COPYING for more details.
 """
 
-import os
-
 from clouddb.apibasemodel import APIBaseModel
 
 class Flavor(APIBaseModel):
@@ -23,22 +21,20 @@ class Flavor(APIBaseModel):
         Connection class when you create or list the avaliable flavors.
         """
         APIBaseModel.__init__(self, **kwargs)
+        
+        self.our_path = "/%ss/%s" % (self.model, self.id)
+
+    @property
+    def model(self):
+        """
+        """
+        return "flavor"
 
     @property
     def items(self):
         """these are the keys of the things from the api we store
         """
-        return ('id', 'links', 'name')
-
-    def __getattr__(self, k):
-        """
-        """
-        if k in ('self_link', 'bookmark_link'):
-            k = k.split('_')[0]
-            for link in self.links:
-                if link['rel'] == k:
-                    return link['href']
-        return self.__dict__[k]
+        return ('id', 'links', 'name', 'ram', 'vcpus')
 
     def __str__(self):
         """

@@ -34,6 +34,8 @@ class APIRequester(object):
         
         self.base_path = ""
         self.base_headers = {}
+        self.tenant_id = None
+        self.client = None
         
         (scheme, auth_host, auth_path, params, query, frag) = urlparse(auth_url)
         
@@ -47,13 +49,16 @@ class APIRequester(object):
         self.service = service
         self.region = region.upper()
         
-        self._setup(self.auth_host)
+        self._current_host = self.auth_host
         self._authenticate()
 
-    def _setup(self, host=None):
+    def _setup(self):
         """
         """
-        self.client = HTTPSConnection(host if host else self.host)
+        if self.client is not None:
+            self.client.close()
+        
+        self.client = HTTPSConnection(self._current_host)
         self.client.set_debuglevel(self.debug)
 
     def _authenticate(self):
@@ -61,18 +66,26 @@ class APIRequester(object):
         """
         
         auth_data = self.post(self.auth_path, {
-            'credentials': {
-                'username': self.user, 'key': self.key
-        }})
+            'auth': {
+                'RAX-KSKEY:apiKeyCredentials': {
+                    'username': self.user, 'apiKey': self.key
+        }}})
         
         self.set_base_header({
-            'X-Auth-Token': auth_data['auth']['token']['id']
+            'X-Auth-Token': auth_data['access']['token']['id']
         })
+        
+        self.tenant_id = auth_data['access']['token']['tenant']['id']
         
         # TODO : save the expires timestamp of the token and reauth when needed
         
-        service_points = auth_data['auth']['serviceCatalog'][self.service]
+        # find this service in the catalog
+        for endpts in auth_data['access']['serviceCatalog']:
+            if endpts['name'] == self.service:
+                service_points = endpts['endpoints']
+                break
         
+        # pick our region
         if not self.region:
             service_url = service_points[0]['publicURL']
         else:
@@ -88,7 +101,7 @@ class APIRequester(object):
         (scheme, self.host, path, params, query, frag) = urlparse(service_url)
         
         # establish settings and connection for the service endpoint
-        self._setup(self.host)
+        self._current_host = self.host
         self.set_base_path(path)
 
     def set_base_header(self, header, value=None):
@@ -171,6 +184,8 @@ class APIRequester(object):
         
         # this is how we make a request
         def make_request():
+            # TODO : this could be better if we were brave enough to handle keep-alives
+            self._setup()
             self.client.request(method, request_path, data, request_headers)
             return self.client.getresponse()
         
@@ -214,6 +229,20 @@ class APIRequester(object):
         """
         """
         r = self.request('POST', path, data, headers, args)
+        
+        return self.handle_response(r)
+    
+    def delete(self, path, data=None, headers=None, args=None):
+        """
+        """
+        r = self.request('DELETE', path, None, headers, args)
+        
+        return self.handle_response(r)
+    
+    def put(self, path, data=None, headers=None, args=None):
+        """
+        """
+        r = self.request('PUT', path, data, headers, args)
         
         return self.handle_response(r)
 

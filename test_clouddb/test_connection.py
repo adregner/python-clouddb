@@ -2,7 +2,6 @@
 """Primary testing suite for clouddb.connection. """
 
 import unittest
-import getpass
 
 from test_clouddb import RAXDB
 import clouddb
@@ -13,7 +12,14 @@ class ConnectionLists(unittest.TestCase):
     def test_flavors_list(self):
         flavors = RAXDB.flavors()
         self.assertIsInstance(flavors, list)
+        self.assertGreater(len(flavors), 0)
         self.assertIsInstance(flavors[0], clouddb.models.flavor.Flavor)
+
+    def test_instances_list(self):
+        instances = RAXDB.instances()
+        self.assertIsInstance(instances, list)
+        self.assertGreater(len(instances), 0)
+        self.assertIsInstance(instances[0], clouddb.models.instance.Instance)
 
 def suite():
     suite = unittest.TestSuite()

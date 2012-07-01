@@ -12,6 +12,7 @@ This code is licensed under the BSD license.  See COPYING for more details.
 from apirequester import APIRequester
 from models import *
 import consts
+import helpers
 
 class Connection(object):
     """
@@ -38,12 +39,13 @@ class Connection(object):
         
         self.debug = int(kwargs.get('debug', 0))
         
-        # this is set twice in here, once to authenticate and another for the
-        # host the service api endpoint is on
-        self.client = None
-        
         self.client = APIRequester(self.user, self.key, 
             auth_url, "cloudDatabases", self.region, debug=self.debug)
+        
+        #Database.client = self.client
+        #Flavor.client = self.client
+        #Instance.client = self.client
+        #User.client = self.client
 
     def __str__(self):
         """
@@ -54,18 +56,58 @@ class Connection(object):
     def instances(self):
         """
         """
-        pass
-    
+        apiout = self.client.get('/instances/detail')
+        return helpers.build_from_list(self, Instance, apiout['instances'])
+
     def flavors(self):
         """
         """
-        apiout = self.client.get('/flavors')
-        flavors = list()
-        
-        for f in apiout['flavors']:
-            flavors.append(Flavor(**f))
-        
-        return flavors
-    
-    
+        apiout = self.client.get('/flavors/detail')
+        return helpers.build_from_list(self, Flavor, apiout['flavors'])
 
+    def get_flavor(self, flavor_id):
+        """
+        """
+        return helpers.get_from_id(self, Flavor, flavor_id)
+
+    def get_instance(self, instance_id):
+        """untested
+        """
+        return helpers.get_from_id(self, Instance, instance_id)
+
+    def create_instance(self, name=None, flavor=None, size=None, database=None, user=None, **instance):
+        """
+        """
+        # name
+        if name is not None:
+            instance['name'] = str(name)
+
+        # ram size of the instance
+        if type(flavor) == Flavor:
+            instance['flavorRef'] = flavor.bookmark_link
+        elif type(flavor) == dict:
+            instance['flavorRef'] = self.flavors().find(**flavor)
+        elif type(flavor) in (int, str, unicode):
+            instance['flavorRef'] = str(flavor)
+
+        # size of the instance
+        if size is not None and (type(size) == int or size.isdigit()):
+            instance['volume'] = { 'size': str(size) }
+
+        # initial database
+        if type(database) in (str, unicode):
+            instance['databases'] = [{"name": database}]
+        elif type(database) == dict:
+            instance['databases'] = [database]
+
+        # initial user
+        if type(user) == dict:
+            instance['users'] = [user]
+
+        apiresult = self.client.post('/instances', { 'instance': instance })
+        return Instance(parent = self, **apiresult['instance'])
+
+    def new_instance(self, **kwargs):
+        """alias for create_instance
+        """
+        return self.create_instance(**kwargs)

@@ -14,10 +14,12 @@ api_key = os.environ['OS_PASSWORD'] if 'OS_PASSWORD' in os.environ else getpass.
 RAXDB = clouddb.Connection(username, api_key, raw_input("region (ord, dfw): "))
 
 import test_connection
+import test_instance
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(test_connection.suite())
+    suite.addTest(test_instance.suite())
     return suite
 
 if __name__ == "__main__":
