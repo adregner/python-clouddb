@@ -4,7 +4,7 @@ __author__ = "Andrew Regner <andrew@aregner.com>"
 """
 exception classes
 
-See COPYING for license information.
+This code is licensed under the MIT license.  See COPYING for more details.
 """
 
 class Error(StandardError):

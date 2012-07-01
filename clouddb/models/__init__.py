@@ -5,6 +5,8 @@ __author__ = "Andrew Regner <andrew@aregner.com>"
 clouddb models module
 
 This module imports all the model classes at once for your convience.
+
+This code is licensed under the MIT license.  See COPYING for more details.
 """
 
 from database import Database

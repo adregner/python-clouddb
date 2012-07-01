@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 __author__ = "Andrew Regner <andrew@aregner.com>"
 
-""" See COPYING for license information. """
+""" This code is licensed under the MIT license.  See COPYING for more details. """
 
 __version__ = "0.1"
 user_agent = "python-clouddb/%s" % __version__

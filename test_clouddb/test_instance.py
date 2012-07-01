@@ -1,5 +1,7 @@
 
-"""Primary testing suite for clouddb.models.instance. """
+"""Primary testing suite for clouddb.models.instance.
+
+This code is licensed under the MIT license.  See COPYING for more details."""
 
 import unittest
 

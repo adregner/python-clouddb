@@ -1,5 +1,7 @@
 
-"""Primary testing suite for clouddb.connection. """
+"""Primary testing suite for clouddb.connection.
+
+This code is licensed under the MIT license.  See COPYING for more details."""
 
 import unittest
 

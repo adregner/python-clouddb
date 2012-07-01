@@ -1,5 +1,7 @@
 
-"""Primary testing suite for clouddb"""
+"""Primary testing suite for clouddb
+
+This code is licensed under the MIT license.  See COPYING for more details."""
 
 import sys
 import os

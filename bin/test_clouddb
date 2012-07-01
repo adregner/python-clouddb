@@ -5,6 +5,7 @@
 
 """Main application for running unit tests for clouddb.
 
+This code is licensed under the MIT license.  See COPYING for more details.
 """
          
 import sys

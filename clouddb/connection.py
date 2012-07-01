@@ -6,7 +6,7 @@ clouddb connection module
 
 This is your starting point for accessing the Cloud Database service.
 
-This code is licensed under the BSD license.  See COPYING for more details.
+This code is licensed under the MIT license.  See COPYING for more details.
 """
 
 from apirequester import APIRequester

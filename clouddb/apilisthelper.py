@@ -4,7 +4,7 @@ __author__ = "Andrew Regner <andrew@aregner.com>"
 """
 list object iterator and helper
 
-This code is licensed under the BSD license.  See COPYING for more details.
+This code is licensed under the MIT license.  See COPYING for more details.
 """
 
 import os

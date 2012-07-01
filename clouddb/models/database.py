@@ -4,7 +4,7 @@ __author__ = "Andrew Regner <andrew@aregner.com>"
 """
 clouddb database module
 
-This code is licensed under the BSD license.  See COPYING for more details.
+This code is licensed under the MIT license.  See COPYING for more details.
 """
 
 from clouddb.apibasemodel import APIBaseModel

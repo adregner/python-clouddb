@@ -1,0 +1,8 @@
+* Handle pagination through the APIListHelper class intelligentaly
+  - hold the list we have so far in the class
+  - request new data only as needed for __getitem__, find, next, etc...
+
+* Implement proper exception classes across the board
+
+* A Database.connect method to return a MySQLdb Connection class instance to the cloud database
+  - probably have to take in the password as an argument since the API doesn't expose that
