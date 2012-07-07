@@ -34,7 +34,7 @@ class APIListHelper(object):
         # check for a simple thing to match
         if key:
             for item in self:
-                if item[self.key_field] == key
+                if item[self.key_field] == key:
                     return item
         
         # doing it the harder way
