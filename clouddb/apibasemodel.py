@@ -22,18 +22,23 @@ class APIBaseModel(object):
         self.parent = parent
         self.client = parent.client
         
-        for k in self.items:
+        self._load_into_self(kwargs, self.items)
+    
+    def _load_into_self(self, data, keys):
+        """
+        """
+        for k in keys:
             try:
                 if k in ('updated', 'created'):
                     try:
-                        setattr(self, k, datetime.strptime(kwargs[k], "%Y-%m-%dT%H:%M:%SZ"))
+                        setattr(self, k, datetime.strptime(data[k], "%Y-%m-%dT%H:%M:%SZ"))
                         continue
                     except ValueError: pass
                 
-                setattr(self, k, kwargs[k])
+                setattr(self, k, data[k])
             except KeyError, e:
                 # TODO : proper exception
-                raise Exception("%s must be specified when creating %s objects" %
+                raise Exception("%s must be specified when using %s objects" %
                     (k, self.__class__.__name__))
     
     @property
@@ -43,10 +48,23 @@ class APIBaseModel(object):
         raise NotImplementedError("This method must be overriden by the super-class.")
 
     @property
+    def path(self):
+        """The API path to this item... default implementation is just a guess
+        """
+        return "/%ss/%s" % (self.model, self.id if 'id' in self else self.name)
+
+    @property
     def items(self):
         """these are the keys of the things from the api we store
         """
         raise NotImplementedError("This method must be overriden by the super-class.")
+
+    @property
+    def extended_items(self):
+        """these are the keys of things that are in this model, but require an
+        additional API call to retrieve
+        """
+        return tuple()
 
     def __str__(self, info_items=None):
         """
@@ -56,10 +74,13 @@ class APIBaseModel(object):
         fq_name = "%s.%s" % (self.__module__, self.__class__.__name__)
         props = ", ".join([ "%s='%s'" % (k, self[k]) for k in info_items ])
         return "<%s %s>" % (fq_name, props)
-    
+
     def __getattr__(self, k):
         """
         """
+        if k in self.extended_items and k not in self:
+            moar_data = self.client.get(self.path)
+            self._load_into_self(moar_data[self.model], self.extended_items)
         if k in ('self_link', 'bookmark_link'):
             k = k.split('_')[0]
             for link in self.links:

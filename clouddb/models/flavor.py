@@ -21,20 +21,14 @@ class Flavor(APIBaseModel):
         Connection class when you create or list the avaliable flavors.
         """
         APIBaseModel.__init__(self, **kwargs)
-        
-        self.our_path = "/%ss/%s" % (self.model, self.id)
 
     @property
     def model(self):
-        """
-        """
         return "flavor"
 
     @property
     def items(self):
-        """these are the keys of the things from the api we store
-        """
-        return ('id', 'links', 'name', 'ram', 'vcpus')
+        return ('id', 'links', 'name', 'ram')
 
     def __str__(self):
         """

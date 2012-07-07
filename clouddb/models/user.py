@@ -26,22 +26,21 @@ class User(APIBaseModel):
             self.databases[n] = Database(self.parent, **self.databases[n])
         
         self.instance_id = self.parent.id
-        self.our_path = "/instances/%s/%ss/%s" % (self.instance_id, self.model, self.name)
 
     @property
     def model(self):
-        """
-        """
         return "flavor"
 
     @property
+    def path(self):
+        return "/instances/%s/%ss/%s" % (self.instance_id, self.model, self.name)
+
+    @property
     def items(self):
-        """these are the keys of the things from the api we store
-        """
         return ('name', 'databases')
 
     def delete(self):
         """Deletes this user
         """
-        self.client.delete(self.our_path)
+        self.client.delete(self.path)
         return True

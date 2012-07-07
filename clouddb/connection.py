@@ -56,13 +56,13 @@ class Connection(object):
     def instances(self):
         """
         """
-        apiout = self.client.get('/instances/detail')
+        apiout = self.client.get('/instances')
         return helpers.build_from_list(self, Instance, apiout['instances'])
 
     def flavors(self):
         """
         """
-        apiout = self.client.get('/flavors/detail')
+        apiout = self.client.get('/flavors')
         return helpers.build_from_list(self, Flavor, apiout['flavors'])
 
     def get_flavor(self, flavor_id):

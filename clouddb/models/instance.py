@@ -28,31 +28,29 @@ class Instance(APIBaseModel):
         """
         APIBaseModel.__init__(self, **kwargs)
         self.flavor = Flavor(self.parent, **self.flavor)
-        
-        self.our_path = "/%ss/%s" % (self.model, self.id)
 
     @property
     def model(self):
-        """
-        """
         return "instance"
 
     @property
     def items(self):
-        """these are the keys of the things from the api we store
-        """
-        return ('id', 'status', 'links', 'name', 'updated', 'created', 'hostname', 'volume', 'flavor')
+        return ('id', 'status', 'links', 'name', 'volume', 'flavor')
+
+    @property
+    def extended_items(self):
+        return ('updated', 'created', 'hostname')
 
     def databases(self):
         """
         """
-        apiout = self.client.get(self.our_path+'/databases')
+        apiout = self.client.get(self.path+'/databases')
         return helpers.build_from_list(self, Database, apiout['databases'])
 
     def users(self):
         """
         """
-        apiout = self.client.get(self.our_path+'/users')
+        apiout = self.client.get(self.path+'/users')
         return helpers.build_from_list(self, clouddb.models.user.User, apiout['users'])
 
     def get_database(self, database_id):
@@ -78,7 +76,7 @@ class Instance(APIBaseModel):
         if character_set: database['character_set'] = character_set
         if collate: database['collate'] = collate
 
-        self.client.post(self.our_path+'/databases', {'databases': [database]})
+        self.client.post(self.path+'/databases', {'databases': [database]})
         return True
 
     def create_user(self, name, password, database=None):
@@ -90,24 +88,24 @@ class Instance(APIBaseModel):
         if database is not None:
             user['databases'] = [{'name': database}]
 
-        self.client.post(self.our_path+'/users', {'users': [user]})
+        self.client.post(self.path+'/users', {'users': [user]})
         return True
 
     def enable_root(self):
         """Enable root access and return the root user's password
         """
-        return self.client.post(self.our_path+'/root')['user']['password']
+        return self.client.post(self.path+'/root')['user']['password']
 
     def got_root(self):
         """Returns True if root access has been enabled on this database instance,
         and false otherwise.
         """
-        return self.client.get(self.our_path+'/root')['rootEnabled']
+        return self.client.get(self.path+'/root')['rootEnabled']
 
     def restart(self):
         """Reboots the underlying virtual server powering this instance.
         """
-        self.client.post(self.our_path+'/action', { 'restart': {} })
+        self.client.post(self.path+'/action', { 'restart': {} })
         return True
 
     def resize(self, flavor):
@@ -126,7 +124,7 @@ class Instance(APIBaseModel):
             # TODO : proper error
             raise Exception()
 
-        self.client.post(self.our_path+'/action', { 'resize': {'flavorRef': flavor} })
+        self.client.post(self.path+'/action', { 'resize': {'flavorRef': flavor} })
         return True
 
     def grow(self, size):
@@ -143,11 +141,11 @@ class Instance(APIBaseModel):
             # TODO : proper error
             raise Exception()
 
-        self.client.post(self.our_path+'/action', { 'resize': {'volume': size} })
+        self.client.post(self.path+'/action', { 'resize': {'volume': size} })
         return True
 
     def delete(self):
         """Deletes this instance and all the databases and users within it.
         """
-        self.client.delete(self.our_path)
+        self.client.delete(self.path)
         return True
