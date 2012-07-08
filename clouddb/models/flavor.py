@@ -28,9 +28,11 @@ class Flavor(APIBaseModel):
 
     @property
     def items(self):
-        return ('id', 'links', 'name', 'ram')
+        return ('id', 'links')
+
+    @property
+    def extended_items(self):
+        return ('name', 'ram')
 
     def __str__(self):
-        """
-        """
-        return APIBaseModel.__str__(self, ('id', 'name', 'self_link', 'bookmark_link'))
+        return APIBaseModel.__str__(self, ('id', 'name', 'ram'))

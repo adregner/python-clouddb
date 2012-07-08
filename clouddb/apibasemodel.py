@@ -31,10 +31,9 @@ class APIBaseModel(object):
             try:
                 if k in ('updated', 'created'):
                     try:
-                        setattr(self, k, datetime.strptime(data[k], "%Y-%m-%dT%H:%M:%SZ"))
+                        setattr(self, k, datetime.strptime(data[k], "%Y-%m-%dT%H:%M:%S"))
                         continue
                     except ValueError: pass
-                
                 setattr(self, k, data[k])
             except KeyError, e:
                 # TODO : proper exception

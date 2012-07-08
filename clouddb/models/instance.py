@@ -27,7 +27,7 @@ class Instance(APIBaseModel):
         Connection class when you create or list the current instances.
         """
         APIBaseModel.__init__(self, **kwargs)
-        self.flavor = Flavor(self.parent, **self.flavor)
+        self.flavor = Flavor(parent = self.parent, **self.flavor)
 
     @property
     def model(self):
@@ -149,3 +149,6 @@ class Instance(APIBaseModel):
         """
         self.client.delete(self.path)
         return True
+
+    def __str__(self):
+        return APIBaseModel.__str__(self, ('id', 'name', 'volume', 'flavor'))

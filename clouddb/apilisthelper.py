@@ -77,3 +77,6 @@ class APIListHelper(object):
     
     def __len__(self):
         return len(self.items)
+
+    def __str__(self):
+        return '[' + ', '.join([str(i) for i in self.items]) + ']'

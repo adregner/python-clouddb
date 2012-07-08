@@ -213,7 +213,9 @@ class APIRequester(object):
         
         read_output = r.read()
         
-        if r.getheader('content-type', 'text/plain') == "application/json":
+        if int(r.getheader('content-length', 1)) == 0:
+            return True
+        elif r.getheader('content-type', 'text/plain') == "application/json":
             return json_loads(read_output)
         else:
             return read_output
