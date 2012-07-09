@@ -121,8 +121,7 @@ class Instance(APIBaseModel):
         return True
 
     def resize(self, flavor):
-        """
-        Change the "flavor" of the Rackspace Cloud Databases instance.  At presetnt
+        """Change the "flavor" of the Rackspace Cloud Databases instance.  At presetnt
         mainly just means the RAM allocated to the instance.
         """
         # ram size of the instance
@@ -140,18 +139,21 @@ class Instance(APIBaseModel):
         return True
 
     def grow(self, size):
-        """
-        Resize the data storage volume of this instance.
+        """Resize the data storage volume of this instance.
         
         Note that it is impossiable to shrink the data storage volume of a Rackspace
         Cloud Databases instance, so size should be larger then the current size.
         """
         # size of the instance
         if size is not None and (type(size) == int or size.isdigit()):
-            size = { 'size': str(size) }
+            size = { 'size': int(size) }
         else:
             # TODO : proper error
             raise Exception()
+
+        if self.size > size['size']:
+            # TODO : proper error
+            raise Exception("This instance has a data storage volume of %d GB and cannot be shrunk. (Tried to specify %d GB as new size.)" % (self.size, size['size']))
 
         self.client.post(self.path+'/action', { 'resize': {'volume': size} })
         return True
