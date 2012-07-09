@@ -64,32 +64,44 @@ class Instance(APIBaseModel):
         return helpers.get_from_id(self, User, user_id)
 
     def create_database(self, name, character_set=None, collate=None):
-        """TODO : support creating multiple databases at once
         """
-        # invalid database names
-        if re.search('["\'`;,\\/]|^[@?# ]|[@?# ]$', name) or len(name) > 64:
-            # TODO : proper error
-            raise Exception()
-
-        database = { 'name': str(name) }
-
-        if character_set: database['character_set'] = character_set
-        if collate: database['collate'] = collate
-
-        self.client.post(self.path+'/databases', {'databases': [database]})
+        """
+        databases = self._form_database_args(name, character_set, collate)
+        self.client.post(self.path+'/databases', {'databases': databases})
         return True
 
-    def create_user(self, name, password, database=None):
-        """TODO : support creating multiple users and databases at once
+    def create_user(self, name, password, databases=None, character_set=None, collate=None):
+        """TODO : support creating multiple users
         """
-        user = {'name': name, 'password': password}
+        data = {'users': [{'name': name, 'password': password}]}
 
-        # TODO : check arguments for character and length restrictions
-        if database is not None:
-            user['databases'] = [{'name': database}]
-
-        self.client.post(self.path+'/users', {'users': [user]})
+        if databases is not None:
+            data['databases'] = self._form_database_args(databases, character_set, collate)
+        
+        self.client.post(self.path+'/users', data)
         return True
+
+    def _form_database_args(self, name, character_set, collate):
+        """Takes many different forms of arguments and creates a list that the API
+        will like to represent a database or databases.
+        """
+        if type(name) == dict:
+            databases = [databases]
+        elif type(name) in (list, tuple) and len(name) >= 1 and type(name[0]) == dict:
+            databases = list(name)
+        elif type(name) in (list, tuple) and len(name) >= 1 and type(name[0]) in (str, unicode):
+            databases = [{'name': dbname, 'character_set': character_set, 'collate': collate} for dbname in name]
+        elif type(name) in (str, unicode):
+            databases = [{'name': str(name), 'character_set': character_set, 'collate': collate}]
+        
+        for n in xrange(len(databases)):
+            self._sanatize_database_name(databases[n]['name'])
+            if 'collate' in databases[n] and databases[n]['collate'] is None:
+                del databases[n]['collate']
+            elif 'character_set' in databases[n] and databases[n]['character_set'] is None:
+                del databases[n]['character_set']
+        
+        return databases
 
     def enable_root(self):
         """Enable root access and return the root user's password
@@ -148,6 +160,12 @@ class Instance(APIBaseModel):
         """Deletes this instance and all the databases and users within it.
         """
         self.client.delete(self.path)
+        return True
+
+    def _sanatize_database_name(self, dbname):
+        if not re.search('^[A-Z0-9_][A-Z0-9@\\?#_ ]*?[A-Z0-9_]?$', dbname, re.I) or len(dbname) > 64:
+            # TODO : proper exception
+            raise Exception("Database name '%s' contains invalid or too many characters" % dbname)
         return True
 
     def __str__(self):
