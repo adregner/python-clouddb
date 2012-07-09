@@ -8,6 +8,7 @@ This code is licensed under the MIT license.  See COPYING for more details.
 """
 
 from clouddb.apibasemodel import APIBaseModel
+from clouddb.apilisthelper import APIListHelper
 
 class User(APIBaseModel):
     """
@@ -22,8 +23,8 @@ class User(APIBaseModel):
         """
         APIBaseModel.__init__(self, **kwargs)
         
-        for db_n in xrange(len(self.databases)):
-            self.databases[n] = Database(self.parent, **self.databases[n])
+        self.databases = APIListHelper( [ Database(parent = self.parent, **dbase)
+            for dbase in self.databases ] )
         
         self.instance_id = self.parent.id
 
