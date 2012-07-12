@@ -12,6 +12,10 @@ sdist
 develop-eggs
 .installed.cfg
 
+# By-product of setup.py
+README
+MANIFEST
+
 # Installer logs
 pip-log.txt
 
