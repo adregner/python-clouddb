@@ -22,23 +22,32 @@ class APIBaseModel(object):
         self.parent = parent
         self.client = parent.client
         
+        self._data = {}
+        
         self._load_into_self(kwargs, self.items)
     
-    def _load_into_self(self, data, keys):
+    def _load_into_self(self, new_data, keys):
         """
         """
-        for k in keys:
-            try:
-                if k in ('updated', 'created'):
-                    try:
-                        setattr(self, k, datetime.strptime(data[k], "%Y-%m-%dT%H:%M:%S"))
-                        continue
-                    except ValueError: pass
-                setattr(self, k, data[k])
-            except KeyError, e:
-                # TODO : proper exception
-                raise Exception("%s must be specified when using %s objects" %
-                    (k, self.__class__.__name__))
+        try:
+            d = dict([ (k, new_data[k]) for k in keys ])
+        except KeyError as e:
+            # TODO : proper exception
+            raise Exception("%s must be specified when using %s objects" %
+                (k, self.__class__.__name__))
+        
+        for time_key in ('updated', 'created'):
+            if time_key in d:
+                d[time_key] = datetime.strptime(d[time_key], "%Y-%m-%dT%H:%M:%S")
+        
+        if 'links' in d:
+            for link_key in ('self_link', 'bookmark_link'):
+                k = link_key.split('_')[0]
+                for l in d['links']:
+                    if l['rel'] == k:
+                        d[link_key] = l['href']
+        
+        self._data.update(d)
     
     @property
     def model(self):
@@ -50,7 +59,7 @@ class APIBaseModel(object):
     def path(self):
         """The API path to this item... default implementation is just a guess
         """
-        return "/%ss/%s" % (self.model, self.id if 'id' in self else self.name)
+        return "/%ss/%s" % (self.model, self._data['id'] if 'id' in self._data else self['name'])
 
     @property
     def items(self):
@@ -63,32 +72,27 @@ class APIBaseModel(object):
         """these are the keys of things that are in this model, but require an
         additional API call to retrieve
         """
-        return tuple()
+        return ()
 
     def __str__(self, info_items=None):
-        """
-        """
         if info_items is None:
-            info_items = self.items
+            info_items = self._data.keys().remove('links')
         fq_name = "%s.%s" % (self.__module__, self.__class__.__name__)
         props = ", ".join([ "%s='%s'" % (k, self[k]) for k in info_items ])
         return "<%s %s>" % (fq_name, props)
 
     def __getattr__(self, k):
-        """
-        """
-        if k in self.extended_items and k not in self:
-            moar_data = self.client.get(self.path)
-            self._load_into_self(moar_data[self.model], self.extended_items)
-        if k in ('self_link', 'bookmark_link'):
-            k = k.split('_')[0]
-            for link in self.links:
-                if link['rel'] == k:
-                    return link['href']
-        return self.__dict__[k]
+        try:
+            return self._get_model_property(k)
+        except KeyError:
+            raise AttributeError(k)
 
     def __getitem__(self, k):
-        return getattr(self, k)
+        return self._get_model_property(k)
 
-    def __contains__(self, k):
-        return k in self.__dict__
+    def _get_model_property(self, k):
+        if k in self.extended_items and k not in self._data:
+            moar_data = self.client.get(self.path)
+            self._load_into_self(moar_data[self.model], self.extended_items)
+        
+        return self._data[k]

@@ -19,7 +19,7 @@ except ImportError:
     from simplejson import loads as json_loads
     from simplejson import dumps as json_dumps
 
-import errors
+import clouddb.errors
 
 class APIRequester(object):
     """

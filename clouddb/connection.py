@@ -9,10 +9,10 @@ This is your starting point for accessing the Cloud Database service.
 This code is licensed under the MIT license.  See COPYING for more details.
 """
 
-from apirequester import APIRequester
-from models import *
-import consts
-import helpers
+from clouddb.api import APIRequester
+from clouddb.models import *
+import clouddb.consts as consts
+import clouddb.helpers as helpers
 
 class Connection(object):
     """

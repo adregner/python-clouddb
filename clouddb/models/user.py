@@ -7,8 +7,8 @@ clouddb user module
 This code is licensed under the MIT license.  See COPYING for more details.
 """
 
-from clouddb.apibasemodel import APIBaseModel
-from clouddb.apilisthelper import APIListHelper
+from clouddb.models.base import APIBaseModel
+from clouddb.helpers import APIListHelper
 
 class User(APIBaseModel):
     """

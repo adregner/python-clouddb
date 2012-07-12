@@ -9,9 +9,9 @@ This module imports all the model classes at once for your convience.
 This code is licensed under the MIT license.  See COPYING for more details.
 """
 
-from database import Database
-from flavor import Flavor
-from instance import Instance
-from user import User
+from clouddb.models.database import Database
+from clouddb.models.flavor import Flavor
+from clouddb.models.instance import Instance
+from clouddb.models.user import User
 
 __all__ = ('Database', 'Flavor', 'Instance', 'User')

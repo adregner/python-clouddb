@@ -7,7 +7,7 @@ clouddb database module
 This code is licensed under the MIT license.  See COPYING for more details.
 """
 
-from clouddb.apibasemodel import APIBaseModel
+from clouddb.models.base import APIBaseModel
 
 class Database(APIBaseModel):
     """

@@ -9,9 +9,8 @@ This code is licensed under the MIT license.  See COPYING for more details.
 
 import re
 
-from clouddb.apibasemodel import APIBaseModel
+from clouddb.models.base import APIBaseModel
 from clouddb.models import *
-import clouddb
 import clouddb.helpers as helpers
 
 class Instance(APIBaseModel):
@@ -51,7 +50,7 @@ class Instance(APIBaseModel):
         """
         """
         apiout = self.client.get(self.path+'/users')
-        return helpers.build_from_list(self, clouddb.models.user.User, apiout['users'])
+        return helpers.build_from_list(self, User, apiout['users'])
 
     def get_database(self, database_id):
         """
