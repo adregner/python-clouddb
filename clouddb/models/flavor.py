@@ -15,24 +15,18 @@ class Flavor(APIBaseModel):
     Cloud Databases service.
     """
     
+    model = "flavor"
+    
+    items = ('id', 'links')
+    
+    extended_items = ('name', 'ram')
+    
     def __init__(self, **kwargs):
         """
         Not to be called directaly.  These instances will be created by the
         Connection class when you create or list the avaliable flavors.
         """
         APIBaseModel.__init__(self, **kwargs)
-
-    @property
-    def model(self):
-        return "flavor"
-
-    @property
-    def items(self):
-        return ('id', 'links')
-
-    @property
-    def extended_items(self):
-        return ('name', 'ram')
 
     def __str__(self):
         return APIBaseModel.__str__(self, ('id', 'name', 'ram'))

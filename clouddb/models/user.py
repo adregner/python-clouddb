@@ -8,12 +8,17 @@ This code is licensed under the MIT license.  See COPYING for more details.
 """
 
 from clouddb.models.base import APIBaseModel
-from clouddb.helpers import APIListHelper
 
 class User(APIBaseModel):
     """
     Instances of this class represent a user in the Cloud Database API.
     """
+    
+    model = "user"
+    
+    items = ('name', 'databases')
+    
+    extended_items = ()
     
     def __init__(self, **kwargs):
         """
@@ -23,22 +28,14 @@ class User(APIBaseModel):
         """
         APIBaseModel.__init__(self, **kwargs)
         
-        self.databases = APIListHelper( [ Database(parent = self.parent, **dbase)
-            for dbase in self.databases ] )
+        self.databases = [ Database(parent = self.parent, **dbase)
+            for dbase in self.databases ]
         
         self.instance_id = self.parent.id
 
     @property
-    def model(self):
-        return "flavor"
-
-    @property
     def path(self):
         return "/instances/%s/%ss/%s" % (self.instance_id, self.model, self.name)
-
-    @property
-    def items(self):
-        return ('name', 'databases')
 
     def delete(self):
         """Deletes this user

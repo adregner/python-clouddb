@@ -19,7 +19,8 @@ except ImportError:
     from simplejson import loads as json_loads
     from simplejson import dumps as json_dumps
 
-import clouddb.errors
+from clouddb.api.auth import APIAuthenticator
+from clouddb import errors
 
 class APIRequester(object):
     """
@@ -27,109 +28,19 @@ class APIRequester(object):
     HTTPS server in a convient way.
     """
     
-    def __init__(self, username, api_key, auth_url, service, region, **kwargs):
+    def __init__(self, username, api_key, auth_url, service, region=None, **kwargs):
         """
         """
-        self.debug = int(kwargs.get('debug', 0))
+        debug = int(kwargs.get('debug', 0))
         
-        self.base_path = ""
-        self.base_headers = {}
-        self.tenant_id = None
-        self.client = None
-        
-        (scheme, auth_host, auth_path, params, query, frag) = urlparse(auth_url)
-        
-        if scheme != 'https':
-            raise Exception("We only support https")
-        
-        self.user = username
-        self.key = api_key
-        self.auth_host = auth_host
-        self.auth_path = auth_path
-        self.service = service
-        self.region = region.upper()
-        
-        self._current_host = self.auth_host
-        self._authenticate()
+        APIAuthenticator(username, api_key, auth_url, service, region)
+        self._authenticate(debug=debug)
 
-    def _setup(self):
-        """
-        """
-        if self.client is not None:
-            self.client.close()
-        
-        self.client = HTTPSConnection(self._current_host)
-        self.client.set_debuglevel(self.debug)
+    @classmethod
+    def _authenticate(self, **kwargs):
+        APIAuthenticator(**kwargs).get_token()
 
-    def _authenticate(self):
-        """
-        """
-        
-        auth_data = self.post(self.auth_path, {
-            'auth': {
-                'RAX-KSKEY:apiKeyCredentials': {
-                    'username': self.user, 'apiKey': self.key
-        }}})
-        
-        self.set_base_header({
-            'X-Auth-Token': auth_data['access']['token']['id']
-        })
-        
-        self.tenant_id = auth_data['access']['token']['tenant']['id']
-        
-        # TODO : save the expires timestamp of the token and reauth when needed
-        
-        # find this service in the catalog
-        for endpts in auth_data['access']['serviceCatalog']:
-            if endpts['name'] == self.service:
-                service_points = endpts['endpoints']
-                break
-        
-        # pick our region
-        if not self.region:
-            service_url = service_points[0]['publicURL']
-        else:
-            service_url = None
-            for endpoint in service_points:
-                if endpoint['region'] == self.region:
-                    service_url = endpoint['publicURL']
-                    break
-            if service_url is None:
-                # TODO : proper error
-                raise Exception("%s region is not avaliable." % self.region)
-        
-        (scheme, self.host, path, params, query, frag) = urlparse(service_url)
-        
-        # establish settings and connection for the service endpoint
-        self._current_host = self.host
-        self.set_base_path(path)
-
-    def set_base_header(self, header, value=None):
-        """
-        """
-        # set multiple headers
-        if type(header) in (dict,) and len(header) > 0:
-            for k, v in header.items():
-                self.set_base_header(k, v)
-
-        # set this one header, from a list or strings
-        else:
-            if type(header) in (tuple, list) and len(header) >= 2:
-                header, value = header[0], header[1]
-
-            self.base_headers[header.title()] = value
-
-    def get_base_headers(self):
-        """
-        """
-        return self.base_headers
-
-    def delete_base_header(self, header):
-        """
-        """
-        if header in self.base_headers:
-            del self.base_headers[header.title()]
-
+    @classmethod
     def _build_path(self, path):
         """
         """
@@ -137,25 +48,19 @@ class APIRequester(object):
             path = "/".join(path)
         return path.strip('/')
 
-    def set_base_path(self, path):
+    @classmethod
+    def request(self, method='GET', path=None, data=None, headers=None, args=None, debug=0):
         """
         """
-        self.base_path = self._build_path(path)
-
-    def get_base_path(self):
-        """
-        """
-        return self.base_path
-
-    def request(self, method='GET', path=None, data=None, headers=None, args=None):
-        """
-        """
+        # get the authentication info from the singleton
+        (auth_token, host, base_path) = APIAuthenticator()()
+        
         method = method.upper()
         
         # build the full path to request
         request_path = ''
-        if self.get_base_path() is not None:
-            request_path = '/' + self.get_base_path()
+        if base_path:
+            request_path = '/' + base_path
         request_path += '/' + self._build_path(path)
         
         # check that we aren't trying to use data when we can't
@@ -163,12 +68,14 @@ class APIRequester(object):
             raise BadRequest("%s requests cannot contain data" % method)
 
         # get base headers
-        request_headers = self.base_headers.copy()
+        request_headers = {
+            'X-Auth-Token': auth_token,
+        }
         
         # don't a type when there is no content
         if not data and 'Content-type' in request_headers:
             del request_headers['Content-type']
-        
+
         # merge base headers and supplied headers
         if headers:
             request_headers.update(headers)
@@ -177,75 +84,76 @@ class APIRequester(object):
         if data and type(data) != str:
             data = json_dumps(data)
             request_headers['Content-type'] = "application/json"
-        
+
         # append url arguments if given
         if args:
             request_path += '?' + urlencode(args)
-        
+
         # this is how we make a request
         def make_request():
-            # TODO : this could be better if we were brave enough to handle keep-alives
-            self._setup()
-            self.client.request(method, request_path, data, request_headers)
-            return self.client.getresponse()
-        
-        try:
-            # first try...
-            response = make_request()
-        except (socket.error, IOError):
-            # maybe we just lost the socket, try again
-            self._setup()
-            response = make_request()
-        
+            client = HTTPSConnection(host)
+            client.set_debuglevel(debug)
+            client.request(method, request_path, data, request_headers)
+            response = client.getresponse()
+            #client.close()
+            return response
+
+        # first try...
+        response = make_request()
+
         # maybe we need to authenticate again
         if response.status == 401:
             self._authenticate()
             response = make_request()
-        
+
         return response
-    
+
+    @classmethod
     def handle_response(self, r):
         """
         """
         if r.status < 200 or r.status > 299:
             # TODO : this is probably throwing away some error information
             raise errors.ResponseError(r.status, r.reason)
-        
+
         read_output = r.read()
-        
+        #print repr(r.status)
+        #print repr(read_output)
+        #print repr(r.getheaders())
+
         if int(r.getheader('content-length', 1)) == 0:
             return True
         elif r.getheader('content-type', 'text/plain') == "application/json":
             return json_loads(read_output)
         else:
             return read_output
-    
-    def get(self, path, headers=None, args=None):
+
+    @classmethod
+    def get(self, path, headers=None, args=None, debug=0):
         """
         """
-        r = self.request('GET', path, None, headers, args)
-        
+        r = self.request('GET', path, None, headers, args, debug)
         return self.handle_response(r)
-    
-    def post(self, path, data=None, headers=None, args=None):
+
+    @classmethod
+    def post(self, path, data=None, headers=None, args=None, debug=0):
         """
         """
-        r = self.request('POST', path, data, headers, args)
-        
+        r = self.request('POST', path, data, headers, args, debug)
         return self.handle_response(r)
-    
-    def delete(self, path, data=None, headers=None, args=None):
+
+    @classmethod
+    def delete(self, path, data=None, headers=None, args=None, debug=0):
         """
         """
-        r = self.request('DELETE', path, None, headers, args)
-        
+        r = self.request('DELETE', path, None, headers, args, debug)
         return self.handle_response(r)
-    
-    def put(self, path, data=None, headers=None, args=None):
+
+    @classmethod
+    def put(self, path, data=None, headers=None, args=None, debug=0):
         """
         """
-        r = self.request('PUT', path, data, headers, args)
-        
+        r = self.request('PUT', path, data, headers, args, debug)
         return self.handle_response(r)
 
 

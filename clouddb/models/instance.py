@@ -20,6 +20,12 @@ class Instance(APIBaseModel):
     databases.
     """
     
+    model = "instance"
+    
+    items = ('id', 'status', 'links', 'name', 'volume', 'flavor')
+    
+    extended_items = ('updated', 'created', 'hostname')
+    
     def __init__(self, **kwargs):
         """
         Not to be called directaly.  These instances will be created by the 
@@ -27,18 +33,6 @@ class Instance(APIBaseModel):
         """
         APIBaseModel.__init__(self, **kwargs)
         self.flavor = Flavor(parent = self.parent, **self.flavor)
-
-    @property
-    def model(self):
-        return "instance"
-
-    @property
-    def items(self):
-        return ('id', 'status', 'links', 'name', 'volume', 'flavor')
-
-    @property
-    def extended_items(self):
-        return ('updated', 'created', 'hostname')
 
     def databases(self):
         """

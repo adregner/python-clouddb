@@ -14,6 +14,12 @@ class Database(APIBaseModel):
     Instances of this class represent a database in the Cloud Database service.
     """
     
+    model = "database"
+    
+    items = ('name',)
+    
+    extended_items = ()
+    
     def __init__(self, **kwargs):
         """
         Not to be called directaly.  These instances will be created by the 
@@ -24,16 +30,8 @@ class Database(APIBaseModel):
         self.instance_id = self.parent.id
 
     @property
-    def model(self):
-        return "flavor"
-
-    @property
     def path(self):
         return "/instances/%s/%ss/%s" % (self.instance_id, self.model, self.name)
-
-    @property
-    def items(self):
-        return ('name',)
 
     def delete(self):
         """Deletes this database

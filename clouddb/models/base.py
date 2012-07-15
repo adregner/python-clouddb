@@ -10,17 +10,18 @@ This code is licensed under the MIT license.  See COPYING for more details.
 import os
 from datetime import datetime
 
+from clouddb.api.requester import APIRequester
+
 class APIBaseModel(object):
     """
     Instances of sub-classes of this class will inherit its easy property
     management capabilities.
     """
     
-    def __init__(self, parent, **kwargs):
+    def __init__(self, **kwargs):
         """
         """
-        self.parent = parent
-        self.client = parent.client
+        self.client = APIRequester
         
         self._data = {}
         
@@ -48,31 +49,58 @@ class APIBaseModel(object):
                         d[link_key] = l['href']
         
         self._data.update(d)
-    
-    @property
-    def model(self):
-        """The API model name that this class represents
-        """
-        raise NotImplementedError("This method must be overriden by the super-class.")
 
     @property
     def path(self):
         """The API path to this item... default implementation is just a guess
         """
-        return "/%ss/%s" % (self.model, self._data['id'] if 'id' in self._data else self['name'])
+        return self.path_to(self._data['id'] if 'id' in self._data else self._data['name'])
 
-    @property
-    def items(self):
-        """these are the keys of the things from the api we store
+    @classmethod
+    def path_to(self, theid):
         """
-        raise NotImplementedError("This method must be overriden by the super-class.")
+        """
+        return "/%ss/%s" % (self.model, str(theid))
 
-    @property
-    def extended_items(self):
-        """these are the keys of things that are in this model, but require an
-        additional API call to retrieve
+    @classmethod
+    def find(cls, key=None, **query):
+        """Finds an item of the given model based on a key or specific parameters.
+
+        key :: The unique identifier for this specific model.  Will return an instance
+        of that model with that specific name or id.
+        
+        query :: arbitrary name=value pairs that will be matched agains a list of
+        all the avaliable items of this model.  If there are no matches, None will
+        be returned.  If there is one match, only that single model is returned.  If
+        there are multiple matches, a list of those models will be returned.
         """
-        return ()
+        # get just this item
+        if key:
+            obj_data = APIRequester.get(cls.path_to(key))[cls.model]
+            return cls.__new__(**obj_data)
+
+        # look at all the items
+        else:
+            objects = [ cls(**obj_data) for obj_data in
+                APIRequester.get("/%ss" % cls.model)["%ss" % cls.model] ]
+
+            # doing it the harder way
+            results = []
+            for item in objects:
+                addit = True
+                for k in query.keys():
+                    if query[k] != item[k]:
+                        addit = False
+                if addit:
+                    results.append(item)
+
+            # check if we have a single match, and return intelligently
+            if len(results) == 0:
+                return None
+            elif len(results) == 1:
+                return results[0]
+            else:
+                return results
 
     def __str__(self, info_items=None):
         if info_items is None:
@@ -91,6 +119,7 @@ class APIBaseModel(object):
         return self._get_model_property(k)
 
     def _get_model_property(self, k):
+        """Gets a property from ourself, and requests more data from the API if its not there yet."""
         if k in self.extended_items and k not in self._data:
             moar_data = self.client.get(self.path)
             self._load_into_self(moar_data[self.model], self.extended_items)

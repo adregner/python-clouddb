@@ -41,17 +41,19 @@ class Connection(object):
         
         self.client = APIRequester(self.user, self.key, 
             auth_url, "cloudDatabases", self.region, debug=self.debug)
-        
-        #Database.client = self.client
-        #Flavor.client = self.client
-        #Instance.client = self.client
-        #User.client = self.client
 
     def __str__(self):
         """
         """
         fq_name = "%s.%s" % (self.__module__, self.__class__.__name__)
         return "<%s object, username=%s, region=%s>" % (fq_name, self.user, self.region)
+
+    def info(self):
+        """
+        """
+        # TODO : this doesn't work for some reason, but it's supposed to return
+        # the api and contract version info
+        return self.client.get('/', debug=2)
 
     def instances(self):
         """
