@@ -3,17 +3,21 @@
 
 This code is licensed under the MIT license.  See COPYING for more details."""
 
-import sys
-import os
-import unittest
 import getpass
+import os
+import sys
+import unittest
 
 import clouddb
 
-username = os.environ['OS_USERNAME'] if 'OS_USERNAME' in os.environ else raw_input("username: ")
-api_key = os.environ['OS_PASSWORD'] if 'OS_PASSWORD' in os.environ else getpass.getpass("api key: ")
+if 'OS_USERNAME' not in os.environ:
+    os.environ['OS_USERNAME'] = raw_input("username: ")
 
-RAXDB = clouddb.Connection(username, api_key, raw_input("region (ord, dfw): "))
+if 'OS_PASSWORD' not in os.environ:
+    os.environ['OS_PASSWORD'] = getpass.getpass("api key: ")
+
+if 'RAX_REGION' not in os.environ:
+    os.environ['RAX_REGION'] = raw_input("region (ord, dfw): ")
 
 import test_connection
 import test_instance
