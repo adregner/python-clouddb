@@ -53,7 +53,7 @@ class Connection(object):
         """
         # TODO : this doesn't work for some reason, but it's supposed to return
         # the api and contract version info
-        return self.client.get('/', debug=2)
+        return self.client.get('/')
 
     def instances(self):
         """
@@ -77,7 +77,7 @@ class Connection(object):
         """
         return helpers.get_from_id(self, Instance, instance_id)
 
-    def create_instance(self, name=None, flavor=None, size=None, database=None, user=None, **instance):
+    def create_instance(self, name=None, flavor=None, size=None, database=None, user=None, wait=False, instance={}):
         """
         """
         # name
@@ -88,13 +88,13 @@ class Connection(object):
         if type(flavor) == Flavor:
             instance['flavorRef'] = flavor.bookmark_link
         elif type(flavor) == dict:
-            instance['flavorRef'] = self.flavors().find(**flavor)
+            instance['flavorRef'] = Flavor.find(**flavor)
         elif type(flavor) in (int, str, unicode):
             instance['flavorRef'] = str(flavor)
 
         # size of the instance
         if size is not None and (type(size) == int or size.isdigit()):
-            instance['volume'] = { 'size': str(size) }
+            instance['volume'] = { 'size': int(size) }
 
         # initial database
         if type(database) in (str, unicode):
@@ -106,8 +106,27 @@ class Connection(object):
         if type(user) == dict:
             instance['users'] = [user]
 
+        # check for required parameters
+        for k in ('name', 'volume', 'flavorRef'):
+            if k not in instance:
+                # TODO : proper exception
+                raise Exception("%s must be specified to create a new instance." % k)
+
         apiresult = self.client.post('/instances', { 'instance': instance })
-        return Instance(parent = self, **apiresult['instance'])
+
+        # to wait or not to wait
+        if wait is not False:
+            wait = consts.create_instance_wait_timeout if type(wait) == bool else float(wait)
+            apiresult = helpers.poll_for_result(self,
+                Instance.path_to(apiresult['instance']['id']), "ACTIVE",
+                wait,
+                consts.create_instance_first_poll,
+                consts.create_instance_poll_interval
+            )
+            return Instance(**apiresult)
+            
+        else:
+            return Instance(**apiresult['instance'])
 
     def new_instance(self, **kwargs):
         """alias for create_instance
