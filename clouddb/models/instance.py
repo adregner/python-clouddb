@@ -11,7 +11,9 @@ import re
 
 from clouddb.models.base import APIBaseModel
 from clouddb.models import *
-import clouddb.helpers as helpers
+from clouddb import helpers
+from clouddb import consts
+from clouddb import errors
 
 class Instance(APIBaseModel):
     """
@@ -32,7 +34,7 @@ class Instance(APIBaseModel):
         Connection class when you create or list the current instances.
         """
         APIBaseModel.__init__(self, **kwargs)
-        self.flavor = Flavor(parent = self.parent, **self.flavor)
+        self.flavor = Flavor(**self.flavor)
 
     def databases(self):
         """
@@ -151,10 +153,25 @@ class Instance(APIBaseModel):
         self.client.post(self.path+'/action', { 'resize': {'volume': size} })
         return True
 
-    def delete(self):
-        """Deletes this instance and all the databases and users within it.
-        """
+    def delete(self, wait=False):
+        """Deletes this instance and all the databases and users within it."""
+        
         self.client.delete(self.path)
+        
+        if wait is not False:
+            wait = consts.delete_instance_wait_timeout if type(wait) == bool else float(wait)
+            try:
+                apiresult = helpers.poll_for_result(self,
+                    self.path, "DELETED", #will never be this status...
+                    wait,
+                    consts.delete_instance_first_poll,
+                    consts.delete_instance_poll_interval
+                )
+            except errors.RemoteResponseError as ex:
+                # expected when we delete something
+                if ex.status != 404:
+                    raise ex
+        
         return True
 
     def _sanatize_database_name(self, dbname):
