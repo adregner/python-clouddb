@@ -3,60 +3,54 @@
 
 This code is licensed under the MIT license.  See COPYING for more details."""
 
-import os
 import time
 import unittest
 
 import clouddb
+import test_clouddb
 
+CLOUDDB_TEST_INSTANCE_OBJECT = None
 CLOUDDB_TEST_BASELINE_INSTANCE_COUNT = None
+CLOUDDB_TEST_INSTANCE_NAME = "testsuite-%d" % time.time()
 
-class InstanceCreate(unittest.TestCase):
-    def __init__(self, *args, **kwargs):
-        super(InstanceCreate, self).__init__(*args, **kwargs)
-        self.raxdb = clouddb.Connection(
-            os.environ['OS_USERNAME'], os.environ['OS_PASSWORD'], os.environ['RAX_REGION'])
-
+class InstanceBaseline(test_clouddb.BaseTestCase):
     def test_instance_list_baseline(self):
         instances = self.raxdb.instances()
         self.assertIsInstance(instances, list)
-        CLOUDDB_TEST_BASELINE_INSTANCE_COUNT = len(instances)
+        test_clouddb.test_instance.CLOUDDB_TEST_BASELINE_INSTANCE_COUNT = len(instances)
 
+class InstanceCreate(test_clouddb.BaseTestCase):
     def test_create_instance(self):
-        self.raxdb.create_instance(
-            name = "testsuite-%d" % time.time(),
-        )
+        test_clouddb.test_instance.CLOUDDB_TEST_INSTANCE_OBJECT = \
+            self.raxdb.create_instance(CLOUDDB_TEST_INSTANCE_NAME, 1, 1, wait=True)
+        self.assertIsInstance(test_clouddb.test_instance.CLOUDDB_TEST_INSTANCE_OBJECT, 
+            clouddb.models.instance.Instance)
 
-class InstanceListGet(unittest.TestCase):
-    def __init__(self, *args, **kwargs):
-        super(InstanceListGet, self).__init__(*args, **kwargs)
-        self.raxdb = clouddb.Connection(
-            os.environ['OS_USERNAME'], os.environ['OS_PASSWORD'], os.environ['RAX_REGION'])
-
+class InstanceListGet(test_clouddb.BaseTestCase):
     def test_instance_list(self):
         instances = self.raxdb.instances()
         self.assertIsInstance(instances, list)
-        self.assertGreater(len(instances), CLOUDDB_TEST_BASELINE_INSTANCE_COUNT)
-        self.assertIsInstance(instances[0], clouddb.models.instance.Instance)
+        self.assertEqual(len(instances),
+            test_clouddb.test_instance.CLOUDDB_TEST_BASELINE_INSTANCE_COUNT + 1)
+        self.assertIsInstance(instances[-1], clouddb.models.instance.Instance)
 
-class InstanceDestroy(unittest.TestCase):
-    def __init__(self, *args, **kwargs):
-        super(InstanceDestroy, self).__init__(*args, **kwargs)
-        self.raxdb = clouddb.Connection(
-            os.environ['OS_USERNAME'], os.environ['OS_PASSWORD'], os.environ['RAX_REGION'])
-
+class InstanceDestroy(test_clouddb.BaseTestCase):
     def test_instance_remove(self):
-        pass
+        test_clouddb.test_instance.CLOUDDB_TEST_INSTANCE_OBJECT.delete(wait=True)
 
+class InstanceListFinal(test_clouddb.BaseTestCase):
     def test_instance_list_baseline_again(self):
         instances = self.raxdb.instances()
-        self.assertEqual(len(instances), CLOUDDB_TEST_BASELINE_INSTANCE_COUNT)
+        self.assertEqual(len(instances),
+            test_clouddb.test_instance.CLOUDDB_TEST_BASELINE_INSTANCE_COUNT)
 
 def suite():
     suite = unittest.TestSuite()
-    #suite.addTest(unittest.makeSuite(InstanceCreate))
-    #suite.addTest(unittest.makeSuite(InstanceListGet))
-    #suite.addTest(unittest.makeSuite(InstanceDestroy))
+    suite.addTest(unittest.makeSuite(InstanceBaseline))
+    suite.addTest(unittest.makeSuite(InstanceCreate))
+    suite.addTest(unittest.makeSuite(InstanceListGet))
+    suite.addTest(unittest.makeSuite(InstanceDestroy))
+    suite.addTest(unittest.makeSuite(InstanceListFinal))
     return suite
 
 if __name__ == "__main__":

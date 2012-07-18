@@ -3,32 +3,21 @@
 
 This code is licensed under the MIT license.  See COPYING for more details."""
 
-import os
 import unittest
 
 import clouddb
+import test_clouddb
 
-class ConnectionLists(unittest.TestCase):
-    def __init__(self, *args, **kwargs):
-        super(ConnectionLists, self).__init__(*args, **kwargs)
-        self.raxdb = clouddb.Connection(
-            os.environ['OS_USERNAME'], os.environ['OS_PASSWORD'], os.environ['RAX_REGION'])
-
+class ConnectionLists(test_clouddb.BaseTestCase):
     def test_logged_in(self):
         self.assertIsInstance(self.raxdb, clouddb.connection.Connection)
 
-class FlavorVerification(unittest.TestCase):
-    def __init__(self, *args, **kwargs):
-        super(FlavorVerification, self).__init__(*args, **kwargs)
-        self.raxdb = clouddb.Connection(
-            os.environ['OS_USERNAME'], os.environ['OS_PASSWORD'], os.environ['RAX_REGION'])
-
+class FlavorVerification(test_clouddb.BaseTestCase):
     def test_flavors_list(self):
         flavors = self.raxdb.flavors()
         self.assertIsInstance(flavors, list)
         self.assertGreater(len(flavors), 0)
         self.assertIsInstance(flavors[0], clouddb.models.flavor.Flavor)
-
     def test_get_flavor(self):
         the_flavor = clouddb.models.flavor.Flavor.find(ram=1024)
         self.assertIsInstance(the_flavor, clouddb.models.flavor.Flavor)
