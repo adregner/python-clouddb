@@ -52,14 +52,12 @@ class APIBaseModel(object):
 
     @property
     def path(self):
-        """The API path to this item... default implementation is just a guess
-        """
+        """The API path to this item... default implementation is just a guess."""
         return self.path_to(self._data['id'] if 'id' in self._data else self._data['name'])
 
     @classmethod
     def path_to(self, theid):
-        """
-        """
+        """Constructs a path within the API to an item like this."""
         return "/%ss/%s" % (self.model, str(theid))
 
     @classmethod
