@@ -13,13 +13,13 @@ class User(APIBaseModel):
     """
     Instances of this class represent a user in the Cloud Database API.
     """
-    
+
     model = "user"
-    
+
     items = ('name', 'databases')
-    
+
     extended_items = ()
-    
+
     def __init__(self, **kwargs):
         """
         Sets the initial details for a user in the API.  Instances of this class
@@ -27,18 +27,23 @@ class User(APIBaseModel):
         database.  You do not need to create instances of this class yourself.
         """
         APIBaseModel.__init__(self, **kwargs)
-        
+
         self.databases = [ Database(parent = self.parent, **dbase)
             for dbase in self.databases ]
-        
+
+        self.parent = parent
         self.instance_id = self.parent.id
 
     @property
     def path(self):
         return "/instances/%s/%ss/%s" % (self.instance_id, self.model, self.name)
 
+    @classmethod
+    def find(cls, key=None, **query):
+        """This method is not supported on this class at this time."""
+        raise NotImplementedError("This method is not yet supported on this model.")
+
     def delete(self):
-        """Deletes this user
-        """
+        """Deletes this user."""
         self.client.delete(self.path)
         return True
