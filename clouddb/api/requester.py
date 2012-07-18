@@ -91,6 +91,9 @@ class APIRequester(object):
 
         # this is how we make a request
         def make_request():
+            # TODO : there should be a better way to clean this up as soon as
+            # we are done with the request, but at least this way there will only
+            # ever be one hanging socket at most at any given time.
             if 'client' in locals() and isinstance(client, HTTPSConnection):
                 client.close()
             client = HTTPSConnection(host)
