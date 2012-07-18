@@ -7,21 +7,16 @@ exception classes
 This code is licensed under the MIT license.  See COPYING for more details.
 """
 
-class Error(StandardError):
-    """
-    Base class for all errors and exceptions
-    """
+class APIError(StandardError):
+    """Base class for all errors and exceptions."""
     pass
 
-
-class ResponseError(Error):
-    """
-    Raised when the remote service returns an error.
-    """
+class RemoteResponseError(APIError):
+    """Raised when the remote service returns an error."""
     def __init__(self, status, reason):
         self.status = status
         self.reason = reason
-        Error.__init__(self)
+        Exception.__init__(self)
 
     def __str__(self):
         return '%d: %s' % (self.status, self.reason)
@@ -29,3 +24,5 @@ class ResponseError(Error):
     def __repr__(self):
         return '%d: %s' % (self.status, self.reason)
 
+class BadRequest(APIError):
+    pass

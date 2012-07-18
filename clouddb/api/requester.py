@@ -91,11 +91,12 @@ class APIRequester(object):
 
         # this is how we make a request
         def make_request():
+            if 'client' in locals() and isinstance(client, HTTPSConnection):
+                client.close()
             client = HTTPSConnection(host)
             client.set_debuglevel(debug)
             client.request(method, request_path, data, request_headers)
             response = client.getresponse()
-            #client.close()
             return response
 
         # first try...
@@ -114,7 +115,7 @@ class APIRequester(object):
         """
         if r.status < 200 or r.status > 299:
             # TODO : this is probably throwing away some error information
-            raise errors.ResponseError(r.status, r.reason)
+            raise errors.RemoteResponseError(r.status, r.reason)
 
         read_output = r.read()
         #print repr(r.status)
@@ -155,7 +156,3 @@ class APIRequester(object):
         """
         r = self.request('PUT', path, data, headers, args, debug)
         return self.handle_response(r)
-
-
-class BadRequest(Exception):
-    pass
