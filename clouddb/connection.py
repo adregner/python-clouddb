@@ -77,8 +77,7 @@ class Connection(object):
         """
         return helpers.get_from_id(self, Instance, instance_id)
 
-    def create_instance(self, name=None, flavor=None, size=None, databases=None,
-            character_set=None, collate=None, user=None, wait=False, instance={}):
+    def create_instance(self, name=None, flavor=None, size=None, **instance):
         """Creates a new instance, optionally with a new database and user pre-made.
         
         Required parameters:
@@ -103,6 +102,16 @@ class Connection(object):
         The API does support creating multiple databases and users at once along
         with a new instance, however this function does not yet have support for
         that.  Future versions will.
+        
+        example:
+            # creates a new mysql instance, with 1GB of RAM and a 3 GB data storage volume
+            instance = raxdb.create_instance("my-db-server", clouddb.Flavor(ram=1024), 3)
+            
+            # creates a new instance, with a 10GB data storage volume, 2GB of RAM (using the
+            API's upstream ID for that particular flavor), 3 initial databases and one inital
+            user.  TODO : see if that user is associated with any databases.
+            instance = raxdb.create_instance("another-db-server", flavorRef="3", size=10,
+                databases=["prod_db", "dev_db", "catpics"], users="chezburger")
         """
         # name
         if name is not None:
@@ -120,19 +129,24 @@ class Connection(object):
         if size is not None and (type(size) == int or size.isdigit()):
             instance['volume'] = { 'size': int(size) }
 
-        # initial database(s)
-        if databases is not None:
-            instance['databases'] = helpers.form_database_args(databases, character_set, collate)
-
-        # initial user
-        if type(user) == dict:
-            instance['users'] = [user]
-
         # check for required parameters
         for k in ('name', 'volume', 'flavorRef'):
             if k not in instance:
                 # TODO : proper exception
                 raise Exception("%s must be specified to create a new instance." % k)
+
+        # initial database(s)
+        if instance.get('databases', None) is not None:
+            instance['databases'] = helpers.form_database_args(instance.get('databases'),
+                instance.get('character_set', None), instance.get('collate', None))
+
+        # initial user
+        if type(user) == dict:
+            instance['users'] = [user]
+
+        # this shouldn't be passed to the API
+        wait = instance.get('wait', False)
+        if wait: del instance['wait']
 
         apiresult = self.client.post('/instances', { 'instance': instance })
 
