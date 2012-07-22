@@ -77,8 +77,32 @@ class Connection(object):
         """
         return helpers.get_from_id(self, Instance, instance_id)
 
-    def create_instance(self, name=None, flavor=None, size=None, database=None, user=None, wait=False, instance={}):
-        """
+    def create_instance(self, name=None, flavor=None, size=None, databases=None,
+            character_set=None, collate=None, user=None, wait=False, instance={}):
+        """Creates a new instance, optionally with a new database and user pre-made.
+        
+        Required parameters:
+            name :: Arbitrary string representation for the new instance.
+            
+            flavor :: Flavor (int id, str href or Flavor object) of the instance to be made.
+            
+            size :: Size (in GB) of the database data storage volume.
+        
+        Optional parameters:
+            databases :: Name of a new database to be created within the new instance.
+            
+            user :: User name of a user to be granted access to the new database above.
+            
+            wait :: Poll at regular intervals and return only once the instance 
+            is finished building on the backend.
+            
+            instance :: Dictionary object that will be encoded and sent directaly
+            in the request to the API.  See the README file that came with this
+            package for information on its format.
+        
+        The API does support creating multiple databases and users at once along
+        with a new instance, however this function does not yet have support for
+        that.  Future versions will.
         """
         # name
         if name is not None:
@@ -96,11 +120,9 @@ class Connection(object):
         if size is not None and (type(size) == int or size.isdigit()):
             instance['volume'] = { 'size': int(size) }
 
-        # initial database
-        if type(database) in (str, unicode):
-            instance['databases'] = [{"name": database}]
-        elif type(database) == dict:
-            instance['databases'] = [database]
+        # initial database(s)
+        if databases is not None:
+            instance['databases'] = helpers.form_database_args(databases, character_set, collate)
 
         # initial user
         if type(user) == dict:

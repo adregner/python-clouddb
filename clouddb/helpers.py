@@ -60,3 +60,25 @@ def poll_for_result(self, path, status, timeout, first_poll, poll_interval):
         apiresult = self.client.get(path).values()[0]
     
     return apiresult
+
+def form_database_args(self, name, character_set, collate):
+    """Takes many different forms of arguments and creates a list that the API
+    will like to represent a database or databases.
+    """
+    if type(name) == dict:
+        databases = [databases]
+    elif type(name) in (list, tuple) and len(name) >= 1 and type(name[0]) == dict:
+        databases = list(name)
+    elif type(name) in (list, tuple) and len(name) >= 1 and type(name[0]) in (str, unicode):
+        databases = [{'name': dbname, 'character_set': character_set, 'collate': collate} for dbname in name]
+    elif type(name) in (str, unicode):
+        databases = [{'name': str(name), 'character_set': character_set, 'collate': collate}]
+    
+    for n in xrange(len(databases)):
+        self._sanatize_database_name(databases[n]['name'])
+        if 'collate' in databases[n] and databases[n]['collate'] is None:
+            del databases[n]['collate']
+        elif 'character_set' in databases[n] and databases[n]['character_set'] is None:
+            del databases[n]['character_set']
+    
+    return databases

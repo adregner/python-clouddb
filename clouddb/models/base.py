@@ -48,6 +48,9 @@ class APIBaseModel(object):
                     if l['rel'] == k:
                         d[link_key] = l['href']
         
+        if 'volume' in d:
+            d['size'] = d['volume']['size']
+        
         self._data.update(d)
 
     @property

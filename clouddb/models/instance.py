@@ -61,7 +61,7 @@ class Instance(APIBaseModel):
     def create_database(self, name, character_set=None, collate=None):
         """
         """
-        databases = self._form_database_args(name, character_set, collate)
+        databases = helpers.form_database_args(name, character_set, collate)
         self.client.post(self.path+'/databases', {'databases': databases})
         return True
 
@@ -71,32 +71,10 @@ class Instance(APIBaseModel):
         data = {'users': [{'name': name, 'password': password}]}
 
         if databases is not None:
-            data['databases'] = self._form_database_args(databases, character_set, collate)
+            data['databases'] = helpers.form_database_args(databases, character_set, collate)
         
         self.client.post(self.path+'/users', data)
         return True
-
-    def _form_database_args(self, name, character_set, collate):
-        """Takes many different forms of arguments and creates a list that the API
-        will like to represent a database or databases.
-        """
-        if type(name) == dict:
-            databases = [databases]
-        elif type(name) in (list, tuple) and len(name) >= 1 and type(name[0]) == dict:
-            databases = list(name)
-        elif type(name) in (list, tuple) and len(name) >= 1 and type(name[0]) in (str, unicode):
-            databases = [{'name': dbname, 'character_set': character_set, 'collate': collate} for dbname in name]
-        elif type(name) in (str, unicode):
-            databases = [{'name': str(name), 'character_set': character_set, 'collate': collate}]
-        
-        for n in xrange(len(databases)):
-            self._sanatize_database_name(databases[n]['name'])
-            if 'collate' in databases[n] and databases[n]['collate'] is None:
-                del databases[n]['collate']
-            elif 'character_set' in databases[n] and databases[n]['character_set'] is None:
-                del databases[n]['character_set']
-        
-        return databases
 
     def enable_root(self):
         """Enable root access and return the root user's password
@@ -148,7 +126,8 @@ class Instance(APIBaseModel):
 
         if self.size > size['size']:
             # TODO : proper error
-            raise Exception("This instance has a data storage volume of %d GB and cannot be shrunk. (Tried to specify %d GB as new size.)" % (self.size, size['size']))
+            raise Exception("This instance has a data storage volume of %d GB and cannot " + \
+                "be shrunk. (Tried to specify %d GB as new size.)" % (self.size, size['size']))
 
         self.client.post(self.path+'/action', { 'resize': {'volume': size} })
         return True
