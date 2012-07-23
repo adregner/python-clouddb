@@ -38,7 +38,7 @@ class APIBaseModel(object):
         """
         try:
             d = dict([ (k, new_data[k]) for k in keys ])
-        except KeyError as e:
+        except KeyError:
             # TODO : proper exception
             raise Exception("%s must be specified when using %s objects" %
                 (k, self.__class__.__name__))

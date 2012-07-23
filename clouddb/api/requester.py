@@ -16,8 +16,12 @@ try:
     from json import loads as json_loads
     from json import dumps as json_dumps
 except ImportError:
-    from simplejson import loads as json_loads
-    from simplejson import dumps as json_dumps
+    try:
+        from simplejson import loads as json_loads
+        from simplejson import dumps as json_dumps
+    except ImportError:
+        # TODO : proper error
+        raise Exception("This library requires some form of JSON support.")
 
 from clouddb.api.auth import APIAuthenticator
 from clouddb import errors
