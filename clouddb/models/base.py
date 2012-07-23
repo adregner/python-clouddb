@@ -18,6 +18,12 @@ class APIBaseModel(object):
     management capabilities.
     """
     
+    model = None
+    
+    items = None
+    
+    extended_items = ()
+    
     def __init__(self, **kwargs):
         """
         """

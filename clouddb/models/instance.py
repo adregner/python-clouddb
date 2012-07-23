@@ -10,7 +10,7 @@ This code is licensed under the MIT license.  See COPYING for more details.
 import re
 
 from clouddb.models.base import APIBaseModel
-from clouddb.models import *
+from clouddb.models import Flavor, Database, User
 from clouddb import helpers
 from clouddb import consts
 from clouddb import errors
@@ -136,8 +136,8 @@ class Instance(APIBaseModel):
 
         if self.size > size['size']:
             # TODO : proper error
-            raise Exception("This instance has a data storage volume of %d GB and cannot " + \
-                "be shrunk. (Tried to specify %d GB as new size.)" % (self.size, size['size']))
+            raise Exception(("This instance has a data storage volume of %d GB and cannot " + \
+                "be shrunk. (Tried to specify %d GB as new size.)") % (self.size, size['size']))
 
         self.client.post(self.path+'/action', { 'resize': {'volume': size} })
         return True

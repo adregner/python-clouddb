@@ -8,6 +8,7 @@ This code is licensed under the MIT license.  See COPYING for more details.
 """
 
 from clouddb.models.base import APIBaseModel
+from clouddb.models import Database
 
 class User(APIBaseModel):
     """
@@ -20,7 +21,7 @@ class User(APIBaseModel):
 
     extended_items = ()
 
-    def __init__(self, **kwargs):
+    def __init__(self, parent, **kwargs):
         """
         Sets the initial details for a user in the API.  Instances of this class
         will be created by the Database class when accessing the users on a 
@@ -28,11 +29,11 @@ class User(APIBaseModel):
         """
         APIBaseModel.__init__(self, **kwargs)
 
-        self.databases = [ Database(parent = self.parent, **dbase)
-            for dbase in self.databases ]
-
         self.parent = parent
         self.instance_id = self.parent.id
+
+        self.databases = [ Database(parent = self.parent, **dbase)
+            for dbase in self.databases ]
 
     @property
     def path(self):

@@ -68,7 +68,7 @@ def maybe_wait_until_deleted(self, wait, path):
     if wait is not False:
         wait = consts.delete_instance_wait_timeout if type(wait) == bool else float(wait)
         try:
-            apiresult = helpers.poll_for_result(self,
+            apiresult = poll_for_result(self,
                 path, "DELETED", #will never be this status...
                 wait,
                 consts.delete_instance_first_poll,
@@ -85,7 +85,7 @@ def form_database_args(self, name, character_set, collate):
     will like to represent a database or databases.
     """
     if type(name) == dict:
-        databases = [databases]
+        databases = [name]
     elif type(name) in (list, tuple) and len(name) >= 1 and type(name[0]) == dict:
         databases = list(name)
     elif type(name) in (list, tuple) and len(name) >= 1 and type(name[0]) in (str, unicode):

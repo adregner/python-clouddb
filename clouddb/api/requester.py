@@ -65,7 +65,7 @@ class APIRequester(object):
         
         # check that we aren't trying to use data when we can't
         if data and method not in ('POST', 'PUT'):
-            raise BadRequest("%s requests cannot contain data" % method)
+            raise errors.BadRequest("%s requests cannot contain data" % method)
 
         # get base headers
         request_headers = {

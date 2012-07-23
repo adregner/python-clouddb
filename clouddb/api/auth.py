@@ -29,6 +29,16 @@ class APIAuthenticator(object):
         return cls.__instance
 
     def __init__(self, *args, **kwargs):
+        """Login to an API capturing the auth token for this session.
+
+        username :: 
+        api_key :: 
+        auth_url :: 
+        service :: 
+        region :: 
+
+        This will do nothing if it has been initialized once already in this context.
+        """
         self.__dict__ = self.__shared_state
 
         if 'debug' in kwargs:
@@ -52,15 +62,8 @@ class APIAuthenticator(object):
         return (self._token, self._service_host, self._service_path)
 
     def get_token(self):
-        """Login to an API capturing the auth token for this session.
-
-        username :: 
-        api_key :: 
-        auth_url :: 
-        service :: 
-        region :: 
-        """
-
+        """Queries the Auth API to get a token and requested service info."""
+        
         # hit the API and find the token
         (scheme, auth_host, auth_path, params, query, frag) = urlparse(self.auth_url)
 

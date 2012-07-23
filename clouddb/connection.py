@@ -141,8 +141,13 @@ class Connection(object):
                 instance.get('character_set', None), instance.get('collate', None))
 
         # initial user
-        if type(user) == dict:
-            instance['users'] = [user]
+        # TODO : we probably need to associate them with the aforementioned database(s)
+        if type(instance.get('user', None)) == dict:
+            instance['users'] = [instance.get('user')]
+        elif type(instance.get('user', None)) in (str, unicode):
+            instance['users'] = [{'name': str(instance.get('user'))}]
+        if 'user' in instance:
+            del instance['user']
 
         # this shouldn't be passed to the API
         wait = instance.get('wait', False)
@@ -175,11 +180,11 @@ class Connection(object):
         # check to see if this is actually a name and not an ID
         if not (len(instance_id) == 36 and len(instance_id.replace('-', '')) == 32):
             instance = Instance.find(name=instance_id)
-            if type(instance) != Instance:
+            if type(instance) == Instance:
+                instance_id = instance.id
+            else:
                 # TODO : proper exception
                 raise Exception("Error resolving %s to a single instance" % instance_id)
-            else:
-                instance_id = instance.id
         
         self.client.delete(Instance.path_to(instance_id))
         helpers.maybe_wait_until_deleted(self, wait, Instance.path_to(instance_id))
