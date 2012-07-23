@@ -58,6 +58,16 @@ class Instance(APIBaseModel):
         """
         return helpers.get_from_id(self, User, user_id)
 
+    def delete_user(self, user_id):
+        """
+        """
+        return self.client.delete(self.path+'/user/%s' % user_id)
+
+    def delete_database(self, database_id):
+        """
+        """
+        return self.client.delete(self.path+'/database/%s' % database_id)
+
     def create_database(self, name, character_set=None, collate=None):
         """
         """
@@ -136,20 +146,7 @@ class Instance(APIBaseModel):
         """Deletes this instance and all the databases and users within it."""
         
         self.client.delete(self.path)
-        
-        if wait is not False:
-            wait = consts.delete_instance_wait_timeout if type(wait) == bool else float(wait)
-            try:
-                apiresult = helpers.poll_for_result(self,
-                    self.path, "DELETED", #will never be this status...
-                    wait,
-                    consts.delete_instance_first_poll,
-                    consts.delete_instance_poll_interval
-                )
-            except errors.RemoteResponseError as ex:
-                # expected when we delete something
-                if ex.status != 404:
-                    raise ex
+        helpers.maybe_wait_until_deleted(self, wait, self.path)
         
         return True
 

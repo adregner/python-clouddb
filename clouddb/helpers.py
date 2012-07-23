@@ -8,6 +8,7 @@ import os
 
 from clouddb.models import *
 from clouddb import errors
+from clouddb import consts
 
 def build_from_list(self, klass, items):
     """
@@ -60,6 +61,24 @@ def poll_for_result(self, path, status, timeout, first_poll, poll_interval):
         apiresult = self.client.get(path).values()[0]
     
     return apiresult
+
+def maybe_wait_until_deleted(self, wait, path):
+    """
+    """
+    if wait is not False:
+        wait = consts.delete_instance_wait_timeout if type(wait) == bool else float(wait)
+        try:
+            apiresult = helpers.poll_for_result(self,
+                path, "DELETED", #will never be this status...
+                wait,
+                consts.delete_instance_first_poll,
+                consts.delete_instance_poll_interval
+            )
+        except errors.RemoteResponseError as ex:
+            # expected when we delete something
+            if ex.status != 404:
+                raise ex
+    
 
 def form_database_args(self, name, character_set, collate):
     """Takes many different forms of arguments and creates a list that the API

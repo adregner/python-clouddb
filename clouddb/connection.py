@@ -168,3 +168,20 @@ class Connection(object):
         """alias for create_instance
         """
         return self.create_instance(**kwargs)
+
+    def delete_instance(self, instance_id, wait=False):
+        """
+        """
+        # check to see if this is actually a name and not an ID
+        if not (len(instance_id) == 36 and len(instance_id.replace('-', '')) == 32):
+            instance = Instance.find(name=instance_id)
+            if type(instance) != Instance:
+                # TODO : proper exception
+                raise Exception("Error resolving %s to a single instance" % instance_id)
+            else:
+                instance_id = instance.id
+        
+        self.client.delete(Instance.path_to(instance_id))
+        helpers.maybe_wait_until_deleted(self, wait, Instance.path_to(instance_id))
+        
+        return True
