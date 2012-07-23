@@ -27,11 +27,13 @@ class BaseTestCase(unittest.TestCase):
 
 import test_connection
 import test_instance
+import test_database_and_user
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(test_connection.suite())
     suite.addTest(test_instance.suite())
+    suite.addTest(test_database_and_user.suite())
     return suite
 
 if __name__ == "__main__":

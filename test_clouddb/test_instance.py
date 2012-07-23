@@ -11,7 +11,7 @@ import test_clouddb
 
 CLOUDDB_TEST_INSTANCE_OBJECT = None
 CLOUDDB_TEST_BASELINE_INSTANCE_COUNT = None
-CLOUDDB_TEST_INSTANCE_NAME = "testsuite-%d" % time.time()
+CLOUDDB_TEST_INSTANCE_NAME = "testsuite-ci-%d" % time.time()
 
 class InstanceBaseline(test_clouddb.BaseTestCase):
     def test_instance_list_baseline(self):
